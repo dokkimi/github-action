@@ -76,5 +76,4 @@ runs:
       if: always()
       shell: bash
       run: |
-        dokkimi clean 2>/dev/null || true
         /usr/local/bin/k3s-uninstall.sh || true
