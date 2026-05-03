@@ -1,5 +1,8 @@
 name: Dokkimi Run Tests
 description: Install k3s, set up a single-node Kubernetes cluster, and run Dokkimi integration tests.
+branding:
+  icon: check-circle
+  color: blue
 inputs:
   tests:
     description: Path to .dokkimi/ directory or a specific definition file
