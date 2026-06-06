@@ -1,6 +1,6 @@
 # Dokkimi GitHub Action
 
-Run [Dokkimi](https://dokkimi.dev) integration, E2E, and visual regression tests in GitHub Actions. The action sets up a single-node Kubernetes cluster on the runner and executes your test suite — no infrastructure expertise required.
+Run [Dokkimi](https://dokkimi.dev) integration, E2E, and visual regression tests in GitHub Actions. The action uses Docker on the runner to execute your test suite — no infrastructure expertise required.
 
 ## Quick start
 
@@ -24,29 +24,29 @@ jobs:
           tests: .dokkimi/
 ```
 
-Build your Docker images before calling the action. Since the action uses the host Docker daemon, images you build are immediately available to Kubernetes pods.
+Build your Docker images before calling the action. Since the action uses the host Docker daemon, images you build are immediately available to your test environments.
 
 ## Inputs
 
 | Input | Default | Description |
 |-------|---------|-------------|
 | `tests` | *required* | Path to `.dokkimi/` directory or a specific definition file |
-| `max-parallel` | `6` | Maximum concurrent test namespaces |
-| `max-booting` | `2` | Maximum namespaces booting simultaneously |
+| `max-parallel` | `6` | Maximum concurrent test environments |
+| `max-booting` | `2` | Maximum environments booting simultaneously |
 | `timeout` | `30000` | HTTP request timeout in milliseconds |
 | `viewport-width` | `1280` | Default browser viewport width for UI tests |
 | `viewport-height` | `720` | Default browser viewport height for UI tests |
+| `dump-retention-days` | `1` | Days to retain the failed-run dump artifact (0 to disable) |
 | `dokkimi-version` | `latest` | Dokkimi CLI version to install |
 
 ## What the action does
 
 1. Frees disk space on the runner
-2. Installs [k3s](https://k3s.io) using the host Docker daemon (`--docker`) as the container runtime
-3. Waits for the cluster to be ready
-4. Pre-pulls required external images
-5. Installs the Dokkimi CLI globally via npm
-6. Runs your tests with `dokkimi run --ci`
-7. Cleans up (tears down namespaces, uninstalls k3s)
+2. Pre-pulls required sidecar images
+3. Installs the Dokkimi CLI globally via npm
+4. Runs your tests with `dokkimi run --ci`
+5. Uploads a dump artifact if any test fails (configurable via `dump-retention-days`)
+6. Cleans up test environments
 
 If any test fails, the action exits with a non-zero code and the workflow step is marked as failed.
 
@@ -96,26 +96,6 @@ steps:
     viewport-height: 1080
 ```
 
-### Uploading failure artifacts
-
-The Dokkimi CLI is installed globally, so it remains available in subsequent steps.
-
-```yaml
-- uses: dokkimi/github-action@v1
-  with:
-    tests: .dokkimi/
-
-- name: Export failures
-  if: failure()
-  run: dokkimi dump --failed -o test-failures.json
-
-- uses: actions/upload-artifact@v4
-  if: failure()
-  with:
-    name: test-failures
-    path: test-failures.json
-```
-
 ## Requirements
 
 - `ubuntu-latest` runner (or any Linux runner with Docker installed)
@@ -124,7 +104,7 @@ The Dokkimi CLI is installed globally, so it remains available in subsequent ste
 
 ## Troubleshooting
 
-**k3s fails to start** — Ensure the runner has Docker installed and running. Self-hosted runners may need `--privileged` or equivalent permissions.
+**Docker not available** — Ensure the runner has Docker installed and running. Self-hosted runners may need `--privileged` or equivalent permissions.
 
 **Image pull timeouts** — Large external images (e.g. browser images for UI tests) can be slow on the first run. Increase `timeout` or cache images across runs with a Docker layer cache action.
 
